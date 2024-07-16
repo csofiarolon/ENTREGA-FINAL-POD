@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>El deshielo</title>
+ 
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+ 
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.js"></script>
+
+ <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+ <style>
+   body, html {
+     margin: 0;
+     padding: 0;
+     height: 100%;
+     overflow: hidden;
+     font-family: 'Poppins', sans-serif;
+   }
+
+   #canvas-container {
+     position: relative;
+     width: 100%;
+     height: 100%;
+   }
+
+   canvas {
+     position: absolute;
+     top: 0;
+     left: 0;
+   }
+
+   #restart-button {
+     display: none;
+     position: absolute;
+     top: 50%;
+     left: 50%;
+     transform: translate(-50%, -50%);
+     padding: 10px 20px;
+     font-size: 24px;
+     background-color: #fff;
+     color: #000;
+     border: none;
+     border-radius: 5px;
+     cursor: pointer;
+     font-family: 'Poppins', sans-serif;
+   }
+
+   .game-over-screen, .you-won-screen {
+     display: none;
+     position: absolute;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 100%;
+     background-color: rgba(0, 0, 0, 0.7);
+     color: #fff;
+     font-size: 36px;
+     text-align: center;
+     padding-top: 200px;
+     box-sizing: border-box;
+     font-family: 'Poppins', sans-serif;
+     
+   }
+
+   .game-over-screen button, .you-won-screen button {
+     padding: 10px 20px;
+     font-size: 24px;
+     background-color: #fff;
+     color: #000;
+     border: none;
+     border-radius: 5px;
+     cursor: pointer;
+     margin-top: 20px;
+     font-family: 'Poppins', sans-serif;
+   }
+ </style>
+</head>
+<body>
+ <div id="canvas-container"></div>
+ <div class="game-over-screen">
+   <div>GAME OVER</div>
+   <div id="game-over-score"></div>
+   <button onclick="restartGame()">Play again</button>
+   <a href="http://127.0.0.1:3002/index.html"><button>Home</button></a>
+ </div>
+ <div class="you-won-screen">
+   <div>YOU WON</div>
+   <div id="you-won-score"></div>
+   <button onclick="restartGame()">Play again</button>
+   <a href="http://127.0.0.1:3002/index.html"><button>Home</button></a>
+ </div>
+
+ <audio id="shoot-sound" src="Sonido/05.wav"></audio>
+ <audio id="block-hit-sound" src="Sonido/03.wav"></audio>
+ <script>
+   let bgImage;
+   let blocks = [];
+   let player;
+   let score = 0;
+   let lasers = [];
+   let timeLeft = 60;
+   let gameOverFlag = false;
+   let restartButton;
+   let blockHitSound;
+   let gameOverScreen;
+   let youWonScreen;
+
+   function preload() {
+     bgImage = loadImage('fondos/fondos pod-04.png');
+     blockHitSound = loadSound('Sonido/03.wav');
+   }
+
+   function setup() {
+     let canvas = createCanvas(windowWidth, windowHeight);
+     canvas.parent('canvas-container');
+     restartButton = document.getElementById('restart-button');
+     gameOverScreen = document.querySelector('.game-over-screen');
+     youWonScreen = document.querySelector('.you-won-screen');
+     initGame();
+   }
+
+   function initGame() {
+     player = new Player();
+     blocks = [];
+     lasers = [];
+     score = 0;
+     timeLeft = 60;
+     gameOverFlag = false;
+     gameOverScreen.style.display = 'none';
+     youWonScreen.style.display = 'none';
+
+     for (let i = 0; i < 4; i++) {
+       blocks.push(new Block(random(width), random(-500, -50)));
+     }
+     setInterval(updateTime, 1000);
+     loop();
+   }
+
+   function draw() {
+     if (gameOverFlag) {
+       return;
+     }
+
+     image(bgImage, 0, 0, width, height);
+
+     player.show();
+     player.update();
+
+     for (let laser of lasers) {
+       laser.show();
+       laser.update();
+       for (let block of blocks) {
+         if (laser.hits(block)) {
+           laser.toDelete = true;
+           block.hit();
+           if (block.dead) {
+             score++;
+             blocks.splice(blocks.indexOf(block), 1);
+             blocks.push(new Block(random(width), random(-500, -50)));
+             blockHitSound.play();
+           }
+         }
+       }
+     }
+
+     for (let block of blocks) {
+       block.show();
+       block.update();
+       if (block.y >= height) {
+         gameOver();
+       }
+     }
+
+     for (let i = lasers.length - 1; i >= 0; i--) {
+       if (lasers[i].toDelete) {
+         lasers.splice(i, 1);
+       }
+     }
+
+     fill(0);
+     textSize(20);
+     textAlign(LEFT);
+     textFont('Poppins');
+     text("Score: " + score, 10, 30);
+     textAlign(RIGHT);
+     text("Time: " + nf(timeLeft, 0, 1) + "s", width - 10, 30);
+
+     if (timeLeft <= 0) {
+       youWon();
+     }
+   }
+
+   function updateTime() {
+     if (timeLeft > 0) {
+       timeLeft--;
+     }
+   }
+
+   function gameOver() {
+     gameOverFlag = true;
+     noLoop();
+     gameOverScreen.style.display = 'block';
+     document.getElementById('game-over-score').innerText = 'Final score: ' + score;
+   }
+
+   function youWon() {
+     gameOverFlag = true;
+     noLoop();
+     youWonScreen.style.display = 'block';
+     document.getElementById('you-won-score').innerText = 'Final score: ' + score;
+   }
+
+   function restartGame() {
+     initGame();
+   }
+
+   function keyPressed() {
+     if (keyCode === UP_ARROW) {
+       let laser = player.shoot();
+       lasers.push(laser);
+     }
+   }
+
+   class Player {
+     constructor() {
+       this.x = width / 2;
+       this.y = height - 20;
+       this.isShooting = false;
+     }
+
+     show() {
+       fill(255);
+       noStroke();
+       ellipse(this.x + 10, this.y - 30, 50, 50);
+       ellipse(this.x + 40, this.y - 40, 75, 80);
+       ellipse(this.x + 90, this.y - 60, 90, 75);
+       ellipse(this.x + 80, this.y - 40, 70, 80);
+       ellipse(this.x + 120, this.y - 40, 70, 80);
+       ellipse(this.x + 150, this.y - 40, 90, 70);
+       ellipse(this.x + 130, this.y - 65, 50, 50);
+       ellipse(this.x + 185, this.y - 40, 50, 50);
+
+       push();
+       translate(this.x, this.y - 60);
+       rotate(radians(-90));
+       scale(-1, 1);
+
+       textSize(50);
+       text("🔫", 0, 0);
+
+       pop();
+       if (this.isShooting) {
+         fill(255, 0, 0);
+         rect(this.x, this.y - 15, 5, 10);
+
+         let shootSound = document.getElementById('shoot-sound');
+         shootSound.currentTime = 0;
+         shootSound.play();
+       }
+     }
+
+     update() {
+       let speed = 10;
+       if (keyIsDown(LEFT_ARROW)) {
+         this.x -= speed;
+       } else if (keyIsDown(RIGHT_ARROW)) {
+         this.x += speed;
+       }
+       this.x = constrain(this.x, 10, width - 10);
+     }
+
+     shoot() {
+       this.isShooting = true;
+       setTimeout(() => {
+         this.isShooting = false;
+       }, 100);
+       return new Laser(this.x, this.y);
+     }
+   }
+
+   class Block {
+     constructor(x, y) {
+       this.x = x;
+       this.y = y;
+       this.r = 90;
+       this.dead = false;
+     }
+
+     show() {
+       fill('#FFD700');
+       textSize(this.r);
+       textAlign(CENTER, CENTER);
+       text("🧊", this.x, this.y);
+     }
+
+     update() {
+       this.y += 1;
+     }
+
+     hit() {
+       this.r -= 30;
+       if (this.r <= 0) {
+         this.dead = true;
+       }
+     }
+   }
+
+   class Laser {
+     constructor(x, y) {
+       this.x = x;
+       this.y = y;
+       this.toDelete = false;
+     }
+
+     show() {
+       fill(255, 0, 0);
+       noStroke();
+       ellipse(this.x, this.y, 15, 15);
+     }
+
+     update() {
+       this.y -= 10;
+     }
+
+     hits(block) {
+       let d = dist(this.x, this.y, block.x, block.y);
+       return d < block.r;
+     }
+   }
+ </script>
+</body>
+</html>

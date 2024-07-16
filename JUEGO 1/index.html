@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tormenta de rayos</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+<style>
+ body, html {
+   margin: 0;
+   padding: 0;
+   height: 100%;
+   overflow: hidden;
+   font-family: 'Poppins', sans-serif; 
+ }
+
+ #canvas-container {
+   position: relative;
+   width: 100%;
+   height: 100%;
+ }
+
+ canvas {
+   position: absolute;
+   top: 0;
+   left: 0;
+ }
+
+ .game-over-screen {
+  font-family: 'Poppins', sans-serif;
+  display: none;
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.7);
+   color: #fff;
+   font-size: 36px;
+   text-align: center;
+   padding-top: 200px;
+   box-sizing: border-box;
+ }
+
+ .game-over-screen button {
+   display: inline-block;
+   margin: 20px 2px 0; 
+   padding: 10px 20px;
+   font-size: 16px;
+   cursor: pointer;
+   text-decoration: none;
+   background-color: #fff;
+   color: #000;
+   border: none;
+   border-radius: 5px;
+   width: 200px;
+   text-align: center; 
+ }
+
+ .game-over-screen a {
+   display: inline-block;
+   margin-top: 20px; 
+   text-decoration: none;
+ }
+
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="canvas-container"></div> 
+
+<div class="game-over-screen" id="game-over-screen">
+  <div id="game-over-message">GAME OVER</div>
+  <div id="final-score">Final score: 0</div>
+  <button id="retry-button" onclick="restartGame()">Play again</button>
+  <a href="http://127.0.0.1:3002/index.html"><button>Home</button></a>
+</div>
+
+<!-- Elementos de audio -->
+<audio id="touch-cloud-sound" src="Sonido/02.wav"></audio>
+<audio id="game-over-sound" src="Sonido/03.wav"></audio>
+
+<script>
+ let playerX; 
+ const playerY = window.innerHeight - 50; 
+ const playerWidth = 50; 
+ const playerHeight = 50; 
+ let obstacles = []; 
+ const obstacleWidth = 50; 
+ const obstacleHeight = 50; 
+ let obstacleSpeed = 3; 
+ let score = 0; 
+ let gameOver = false; 
+ let frameCounter = 0; 
+ let bgImage; 
+ let startTime; 
+ let gameTime = 60; 
+ let countdown = gameTime;
+
+ function preload() {
+   bgImage = loadImage('fondos/fondos pod-01.png');
+ }
+
+ function setup() {
+   let canvas = createCanvas(windowWidth, windowHeight);
+   canvas.parent('canvas-container');
+   playerX = width / 2 - playerWidth / 2; 
+   startTime = millis(); 
+ }
+
+ function draw() {
+   background(bgImage);
+   fill('white');
+   noStroke();
+   drawPlatform(playerX, playerY);
+
+   
+frameCounter++;
+if (frameCounter % 50 === 0) { 
+  let newObstacles = 2; 
+  for (let i = 0; i < newObstacles; i++) {
+    let x;
+    let tooClose;
+    let attempts = 0; 
+    do {
+      x = random(width - obstacleWidth);
+      tooClose = obstacles.some(obstacle => abs(obstacle.x - x) < obstacleWidth);
+      attempts++;
+      if (attempts > 10) { 
+        tooClose = false;
+      }
+    } while (tooClose); 
+    obstacles.push({x: x, y: 0});
+  }
+  obstacleSpeed += 0.05; 
+}
+
+   //obstáculos
+   for (let i = obstacles.length - 1; i >= 0; i--) {
+     fill('white');
+     noStroke();
+     let raySize = obstacleHeight + 20; 
+     textSize(raySize);
+     textAlign(CENTER, CENTER);
+     text("⚡", obstacles[i].x + obstacleWidth / 2, obstacles[i].y + obstacleHeight / 2);
+
+     obstacles[i].y += obstacleSpeed;
+
+     //obstáculo toca al jugador
+     if (detectCollision(playerX, playerY, playerWidth, playerHeight, obstacles[i].x, obstacles[i].y, obstacleWidth, obstacleHeight)) {
+       gameOver = true;
+       document.getElementById('game-over-sound').currentTime = 0;
+       document.getElementById('game-over-sound').play(); 
+       document.getElementById('final-score').innerText = 'Final score: ' + score; 
+       document.getElementById('game-over-screen').style.display = 'block'; 
+     }
+
+     //obstáculos y sonido
+     if (obstacles[i].y > height) {
+       document.getElementById('touch-cloud-sound').currentTime = 0;
+       document.getElementById('touch-cloud-sound').play(); 
+       obstacles.splice(i, 1);
+       score++;
+     }
+   }
+
+   //tiempo
+   let elapsedTime = (millis() - startTime) / 1000;
+
+   countdown = gameTime - floor(elapsedTime);
+
+
+   fill(255);
+   textSize(20);
+   textAlign(LEFT);
+   textFont('Poppins');
+   text("Score: " + score, 10, 30);
+   textAlign(RIGHT);
+   text("Time: " + nf(max(countdown, 0), 0, 1) + "s", width - 10, 30);
+
+   
+   if (countdown <= 0 && !gameOver) {
+     document.getElementById('game-over-sound').currentTime = 0;
+     document.getElementById('game-over-sound').play(); 
+     document.getElementById('final-score').innerText = 'Final score: ' + score; 
+     document.getElementById('game-over-message').innerText = 'YOU WON'; 
+     document.getElementById('game-over-screen').style.display = 'block'; 
+     noLoop(); 
+   } else if (gameOver) {
+     noLoop(); 
+     document.getElementById('game-over-screen').style.display = 'block'; 
+   }
+ }
+
+ function drawPlatform(x, y) {
+   ellipse(x, y, obstacleWidth, obstacleHeight);
+   ellipse(x + 30, y - 10, obstacleWidth + 25, obstacleHeight + 30);
+   ellipse(x + 80, y - 30, obstacleWidth + 40, obstacleHeight + 25);
+   ellipse(x + 70, y - 10, obstacleWidth + 20, obstacleHeight + 30);
+   ellipse(x + 110, y - 10, obstacleWidth + 20, obstacleHeight + 30);
+   ellipse(x + 140, y - 10, obstacleWidth + 40, obstacleHeight + 20);
+   ellipse(x + 120, y - 35, obstacleWidth, obstacleHeight);
+   ellipse(x + 175, y - 10, obstacleWidth, obstacleHeight);
+ }
+
+
+ function keyPressed() {
+   const moveSpeed = 100; 
+   if (keyCode === LEFT_ARROW && playerX > 0) {
+     playerX -= moveSpeed;
+   } else if (keyCode === RIGHT_ARROW && playerX + playerWidth < width) {
+     playerX += moveSpeed;
+   }
+ }
+
+ // colisiones
+ function detectCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+   return x1 < x2 + w2 &&
+          x1 + w1 > x2 &&
+          y1 < y2 + h2 &&
+          y1 + h1 > y2;
+ }
+
+ function restartGame() {
+   gameOver = false;
+   score = 0;
+   obstacles = [];
+   obstacleSpeed = 3;
+   frameCounter = 0;
+   startTime = millis();
+   document.getElementById('game-over-screen').style.display = 'none';
+   loop(); 
+ }
+</script>
+</body>
+</html>

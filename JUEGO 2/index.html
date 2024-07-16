@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Copos voladores</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #restart-button {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 10px 20px;
+      font-size: 24px;
+      background-color: #fff;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .game-over-screen {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font-size: 36px;
+      text-align: center;
+      padding-top: 200px;
+      box-sizing: border-box;
+    }
+
+    .game-over-screen button {
+      padding: 10px 20px;
+      font-size: 24px;
+      background-color: #fff;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <button id="restart-button" onclick="restartGame()">Play</button>
+
+  
+  <audio id="touch-cloud-sound" src="Sonido/04.wav"></audio>
+  <audio id="game-over-sound" src="Sonido/01.wav"></audio>
+
+  
+  <div class="game-over-screen" id="game-over-screen">
+    <div id="game-over-message"></div>
+    <div id="final-score"></div>
+    <button onclick="restartGame()">Play again</button>
+    <button onclick="goToHome()">Home</button>
+  </div>
+
+  <script>
+    let ball;
+    let platforms = [];
+    let bgImage;
+    let gravity = 1;
+    let jumpForce = 20;
+    let platformSpeed = 2;
+    let gameOver = false;
+    let restartButton;
+    let startTime;
+    let elapsedTime = 0;
+    let touchCloudSound;
+    let gameOverSound;
+    let lastPlatformTouched = null;
+    let touchesCount = 0;
+
+    const gameDuration = 60;
+    let timeLeft = gameDuration;
+    let gameWon = false; 
+
+    function preload() {
+      bgImage = loadImage('fondos/fondos pod-02.png');
+    }
+
+    function setup() {
+      let canvas = createCanvas(windowWidth, windowHeight);
+      canvas.parent('canvas-container');
+
+      restartButton = document.getElementById('restart-button');
+
+      touchCloudSound = document.getElementById('touch-cloud-sound');
+      gameOverSound = document.getElementById('game-over-sound');
+
+      initGame();
+    }
+
+    function initGame() {
+      platforms = [];
+      gameOver = false;
+      gameWon = false;
+      restartButton.style.display = 'none';
+      startTime = millis();
+      elapsedTime = 0;
+      lastPlatformTouched = null;
+      timeLeft = gameDuration;
+
+      for (let i = 0; i < 5; i++) {
+        platforms.push({
+          x: random(width - 200),
+          y: height - i * 150 - 50,
+          width: 50,
+          height: 50,
+          collisionWidth: 150,
+          collisionHeight: 75
+        });
+      }
+
+      ball = {
+        x: platforms[platforms.length - 1].x + platforms[platforms.length - 1].width / 2,
+        y: platforms[platforms.length - 1].y - 25,
+        diameter: 50,
+        velX: 0,
+        velY: 0,
+        speed: 10,
+        onGround: true
+      };
+    }
+
+    function draw() {
+      if (gameOver || gameWon) {
+        return;
+      }
+
+      background(bgImage);
+
+      ball.velY += gravity;
+
+      if (keyIsDown(LEFT_ARROW)) {
+        ball.velX = -ball.speed;
+      } else if (keyIsDown(RIGHT_ARROW)) {
+        ball.velX = ball.speed;
+      } else {
+        ball.velX = 0;
+      }
+
+      ball.x += ball.velX;
+      ball.y += ball.velY;
+
+      if (ball.x - ball.diameter / 2 < 0) {
+        ball.x = ball.diameter / 2;
+        ball.velX = 0;
+      } else if (ball.x + ball.diameter / 2 > width) {
+        ball.x = width - ball.diameter / 2;
+        ball.velX = 0;
+      }
+      if (ball.y - ball.diameter / 2 < 0) {
+        ball.y = ball.diameter / 2;
+        ball.velY = 0;
+      }
+
+      ball.onGround = false;
+      for (let i = 0; i < platforms.length; i++) {
+        let platform = platforms[i];
+        if (ball.x + ball.diameter / 2 > platform.x - platform.collisionWidth / 2 &&
+            ball.x - ball.diameter / 2 < platform.x + platform.width + platform.collisionWidth / 2 &&
+            ball.y + ball.diameter / 2 > platform.y - platform.collisionHeight / 2 &&
+            ball.y - ball.diameter / 2 < platform.y + platform.height + platform.collisionHeight / 2 &&
+            ball.velY >= 0) {
+          ball.y = platform.y - ball.diameter / 2;
+          ball.velY = 0;
+          ball.onGround = true;
+
+          if (lastPlatformTouched !== platform) {
+            touchCloudSound.currentTime = 0;
+            touchCloudSound.play();
+            lastPlatformTouched = platform;
+            touchesCount++;
+          }
+        }
+      }
+
+      if (ball.y + ball.diameter / 2 >= height) {
+        gameOver = true;
+        elapsedTime = millis() - startTime;
+        gameOverSound.play();
+      }
+
+      for (let i = 0; i < platforms.length; i++) {
+        platforms[i].y -= platformSpeed;
+        if (platforms[i].y + platforms[i].height < 0) {
+          platforms[i].y = height;
+          platforms[i].x = random(width - platforms[i].width);
+          if (lastPlatformTouched === platforms[i]) {
+            lastPlatformTouched = null;
+          }
+        }
+      }
+
+      fill('#FFD700');
+      textSize(130);
+      textAlign(CENTER, CENTER);
+      text("❄️", ball.x, ball.y);
+
+      fill('white');
+      noStroke();
+      for (let i = 0; i < platforms.length; i++) {
+        let platform = platforms[i];
+        ellipse(platform.x, platform.y, platform.width, platform.height);
+        ellipse(platform.x + 30 , platform.y -10, platform.width +25, platform.height +30);
+        ellipse(platform.x + 80 , platform.y -30, platform.width +40, platform.height +25);
+        ellipse(platform.x + 70 , platform.y -10, platform.width +20, platform.height +30);
+        ellipse(platform.x + 110 , platform.y -10, platform.width +20, platform.height +30);
+        ellipse(platform.x + 140 , platform.y -10, platform.width +40, platform.height +20);
+        ellipse(platform.x + 120 , platform.y -35, platform.width, platform.height);
+        ellipse(platform.x + 175 , platform.y -10, platform.width, platform.height);
+      }
+
+      fill(0);
+      textSize(20);
+      textAlign(LEFT, TOP);
+      textFont('Poppins');
+      text('Score: ' + touchesCount, 20, 20);
+
+      fill(0);
+      textSize(20);
+      textAlign(RIGHT, TOP);
+      textFont('Poppins');
+      let timeToShow = Math.ceil(timeLeft).toFixed(1);
+      text('Time: ' + timeToShow + 's', width - 20, 20);
+
+      if (!gameOver) {
+        let currentTime = millis();
+        elapsedTime = (currentTime - startTime) / 1000;
+        timeLeft = gameDuration - elapsedTime;
+        if (timeLeft <= 0) {
+          gameWon = true;
+          timeLeft = 0;
+          gameOverSound.play();
+        }
+      }
+
+      if (gameWon) {
+        document.getElementById('game-over-screen').style.display = 'block';
+        document.getElementById('game-over-message').innerText = 'YOU WON';
+        document.getElementById('final-score').innerText = 'Final Score: ' + touchesCount;
+        noLoop();
+      } else if (gameOver) {
+        document.getElementById('game-over-screen').style.display = 'block';
+        document.getElementById('game-over-message').innerText = 'GAME OVER';
+        document.getElementById('final-score').innerText = 'Final Score: ' + touchesCount;
+        noLoop();
+      }
+    }
+
+    function keyPressed() {
+      if (keyCode === UP_ARROW && ball.onGround) {
+        ball.velY = -jumpForce;
+        ball.onGround = false;
+      }
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+
+    function restartGame() {
+      touchesCount = 0;
+      initGame();
+      document.getElementById('game-over-screen').style.display = 'none';
+      loop();
+    }
+
+    function goToHome() {
+      window.location.href = 'http://127.0.0.1:3002/index.html';
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</body>
+</html>

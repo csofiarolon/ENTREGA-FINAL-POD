@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+
+
+body {
+   font-family: "Poppins", sans-serif;
+   font-weight: 900;
+   display: flex;
+   color: #000fb3;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+   margin: 0;
+   background-color: #4ec1ff;
+   text-align: center;
+   height: 100%; /* Asegúrate de que el body ocupe toda la altura de la pantalla */
+   overflow: hidden; /* Evita el scroll */
+   width: 100%;
+}
+
+.container {
+   background-color: #0d00ff;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   padding: 20px;
+   font-family: "Poppins";
+   color: rgb(255, 255, 255);
+   font-weight: 400;
+   font-size: 20px;
+   width: 100vw; /* Ocupa todo el ancho de la pantalla */
+   height: 60vh; /* La altura será el 50% de la pantalla */
+   position: absolute; /* Posición absoluta para posicionar el contenedor */
+   bottom: 0; /* Comienza en el borde inferior de la pantalla */
+   border-top-left-radius: 150px;
+   border-top-right-radius: 150px;
+}
+
+
+
+.header {
+   position: relative;
+   text-align: center;
+}
+
+
+.forma {
+   position: absolute; /* Se posiciona en relación al contenedor padre */
+   width: 500px;
+   height: 150px; /* Ajusta la altura según sea necesario */
+   background-color: rgba(0, 0, 255, 0.5); /* Color y transparencia de la forma */
+   top: 45%; /* Ajusta la posición vertical */
+   left: 50%; /* Centra horizontalmente */
+   transform: translateX(-72%) translateY(-20%); /* Ajusta la posición horizontal y vertical */
+}
+
+h1 {
+   font-size: 60px;
+   position: absolute; /* Cambia a position absolute */
+   margin: 0; /* Ajusta el margen según sea necesario */
+   padding: 10px;
+   border-radius: 10px;
+   top: 35px; /* Ajusta la posición vertical según sea necesario */
+   left: -205px; /* Ajusta la posición horizontal según sea necesario */
+   white-space: nowrap; /* Evita que el texto se divida en varias líneas */
+   width: auto;
+}
+
+
+p {
+   font-size: 1.5em; /* Ajusta este valor según tus necesidades */
+   margin: 10px 0;
+   
+}
+
+.button-container {
+   display: flex;
+   flex-wrap: wrap; /* Permite que los juegos se envuelvan en múltiples líneas */
+   gap: 10px; /* Espacio entre los juegos */
+   justify-content: center; /* Centra los juegos horizontalmente */
+   width: 100%;
+}
+
+.button-wrapper {
+   position: relative;
+   display: inline-block;
+   top:10%;
+   width: 450px; /* Ancho de cada juego */
+   margin: 10px; /* Espacio alrededor de cada juego */
+}
+
+.game-image {
+   width: 100%; /* Ajusta este valor según tus necesidades */
+   height: auto;
+   border-radius: 10%;
+}
+
+.game-button {
+   display: block;
+   margin-top: 10px;
+   padding: 10px 20px;
+   font-size: 100; /* Ajusta este valor según tus necesidades */
+   cursor: pointer;
+   text-decoration: none;
+   color: white;
+   background-color: #007BFF;
+   border-radius: 5px;
+   transition: background-color 0.3s;
+}
+
+.game-button:hover {
+   background-color: #0056b3;
+}
+
+.overlay {
+   position: absolute;
+   top: 7%;
+   left: 50%;
+   transform: translateX(-50%);
+   width: 400px; /* Ancho del overlay */
+   padding: 10px;
+   background-color: rgb(0, 0, 0);
+   color: white;
+   text-align: center;
+   border-radius: 5px;
+   display: none;
+   z-index: 1;
+}
+
+.button-wrapper:hover .overlay {
+   display: block;
+}
+
+/* Estilos específicos para el texto del juego */
+.game-text {
+   font-size: 100; /* Tamaño del texto del juego */
+   font-weight: bold; /* Peso de la fuente del texto del juego */
+   color: #333; /* Color del texto del juego */
+   margin-bottom: 8px; /* Espacio inferior del texto del juego */
+}
+
+
+
+.footer {
+   background-color:#0d00ff;
+   font-family: "Poppins", sans-serif;
+   font-weight: 200; /* Utiliza el peso de fuente 'thin' */
+   margin-top: auto;
+   font-size: 0.8em; /* Ajusta el tamaño del texto del footer */
+   color: #ffffff; /* Color del texto del footer */
+}
+ 

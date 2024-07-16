@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="utf-8">
+ <title>Cazador de gotas</title>
+
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+
+ <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+ <style>
+   body, html {
+     margin: 0;
+     padding: 0;
+     height: 100%;
+     overflow: hidden;
+     font-family: 'Poppins', sans-serif; 
+   }
+
+   #canvas-container {
+     position: relative;
+     width: 100%;
+     height: 100%;
+   }
+
+   canvas {
+     position: absolute;
+     top: 0;
+     left: 0;
+   }
+
+  
+   .game-over-screen {
+     display: none;
+     position: absolute;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 100%;
+     background-color: rgba(0, 0, 0, 0.7);
+     color: #fff;
+     font-size: 36px;
+     text-align: center;
+     padding-top: 200px;
+     box-sizing: border-box;
+   }
+
+   .game-over-screen button {
+     padding: 10px 20px;
+     font-size: 24px;
+     background-color: #fff;
+     color: #000;
+     border: none;
+     border-radius: 5px;
+     cursor: pointer;
+     margin-top: 20px;
+   }
+ </style>
+</head>
+<body>
+ <div id="canvas-container"></div> 
+ <audio id="touch-cloud-sound" src="Sonido/06.wav"></audio>
+ <audio id="game-over-sound" src="Sonido/03.wav"></audio>
+ <div class="game-over-screen" id="game-over-screen">
+   <div>GAME OVER</div>
+   <div>Final score: <span id="final-score"></span></div>
+   <button onclick="restartGame()">Play again</button>
+   <button onclick="goToHome()">Home</button>
+ </div>
+ <div class="game-over-screen" id="you-won-screen">
+   <div>YOU WON</div>
+   <div>Final score: <span id="final-score-won"></span></div>
+   <button onclick="restartGame()">Play again</button>
+   <button onclick="goToHome()">Home</button>
+ </div>
+ <script>
+   let player; 
+   let balls = []; 
+   let gameOver = false; 
+   let ballSpeed = 6; 
+   let maxBalls = 2; 
+   let interval = 5000; 
+   let lastBallTime = 0; 
+   let score = 0; 
+   let timeLeft = 60; 
+   let bgImage; 
+   let gameOverSoundPlayed = false; 
+
+   function preload() {
+
+     bgImage = loadImage('fondos/fondos pod-03.png');
+   }
+
+   function setup() {
+     let canvas = createCanvas(windowWidth, windowHeight);
+     canvas.parent('canvas-container');
+     player = new Paddle(); 
+     setInterval(updateTime, 1000); 
+   }
+
+   function draw() {
+     image(bgImage, 0, 0, width, height);
+
+     if (!gameOver && timeLeft > 0) {
+       player.show(); 
+       player.update(); 
+
+     
+       for (let i = balls.length - 1; i >= 0; i--) {
+         balls[i].show();
+         balls[i].update(player);
+         if (balls[i].y > height) {
+           balls.splice(i, 1);
+         }
+       }
+
+       
+       if (millis() - lastBallTime > interval && balls.length < maxBalls) {
+         balls.push(new Ball());
+         lastBallTime = millis();
+         interval += 2000; 
+         ballSpeed += 0.2; 
+       }
+
+   
+       fill(0); 
+       textSize(20);
+       textAlign(LEFT);
+       textFont('Poppins');
+       text("Score: " + score, 10, 30);
+
+       
+       textAlign(RIGHT);
+       text("Time: " + nf(timeLeft, 0, 1) + "s", width - 10, 30);
+
+     } else {
+       if (!gameOverSoundPlayed) {
+         if (timeLeft <= 0) {
+         
+           document.getElementById('you-won-screen').style.display = 'block';
+           document.getElementById('final-score-won').innerText = score;
+         } else {
+           
+           document.getElementById('game-over-screen').style.display = 'block';
+           document.getElementById('final-score').innerText = score;
+         }
+
+         document.getElementById('game-over-sound').play(); 
+         gameOverSoundPlayed = true; 
+       }
+     }
+   }
+
+   function updateTime() {
+     if (timeLeft > 0) {
+       timeLeft--;
+     }
+   }
+
+   //paleta del jugador
+   class Paddle {
+     constructor() {
+       this.w = 200; 
+       this.h = 50; 
+       this.y = height - 40; 
+       this.x = width / 2 - this.w / 2; 
+     }
+
+     show() {
+       fill(255); 
+       noStroke();
+       ellipse(this.x + 10, this.y - 30, 50, 50);
+       ellipse(this.x + 40, this.y - 40, 75, 80);
+       ellipse(this.x + 90, this.y - 60, 90, 75);
+       ellipse(this.x + 80, this.y - 40, 70, 80);
+       ellipse(this.x + 120, this.y - 40, 70, 80);
+       ellipse(this.x + 150, this.y - 40, 90, 70);
+       ellipse(this.x + 130, this.y - 65, 50, 50);
+       ellipse(this.x + 185, this.y - 40, 50, 50);
+     }
+
+     update() {
+       if (keyIsDown(LEFT_ARROW)) {
+         this.x -= 10; 
+       } else if (keyIsDown(RIGHT_ARROW)) {
+         this.x += 10; 
+       }
+       this.x = constrain(this.x, 0, width - this.w); 
+     }
+   }
+
+  
+   class Ball {
+     constructor() {
+       this.size = 100; 
+       this.reset();
+     }
+
+     reset() {
+       this.x = random(this.size / 2, width - this.size / 2); 
+       this.y = random(this.size / 2, height / 2); 
+       this.ySpeed = ballSpeed - 2; 
+       this.xSpeed = random(-ballSpeed, ballSpeed); 
+     }
+
+     show() {
+       fill('#FFD700'); 
+       textSize(this.size); 
+       textAlign(CENTER, CENTER); 
+       text("💧", this.x, this.y); 
+     }
+
+     update(player) {
+       this.y += this.ySpeed; 
+       this.x += this.xSpeed; 
+   
+       if (this.x - this.size / 2 < 0 || this.x + this.size / 2 > width) {
+         this.xSpeed *= -1;
+       }
+
+     
+       if (this.y + this.size / 2 > player.y &&
+           this.x > player.x &&
+           this.x < player.x + player.w) {
+         this.ySpeed *= -1;
+         score++; 
+         document.getElementById('touch-cloud-sound').play(); 
+       }
+
+       if (this.y - this.size / 2 < 0) {
+         this.ySpeed *= -1;
+       }
+
+       if (this.y + this.size / 2 > height) {
+         gameOver = true;
+         if (!gameOverSoundPlayed) {
+           document.getElementById('game-over-sound').play(); 
+           gameOverSoundPlayed = true; 
+           document.getElementById('game-over-screen').style.display = 'block';
+           document.getElementById('final-score').innerText = score;
+         }
+       }
+     }
+   }
+
+  
+   function restartGame() {
+     gameOver = false;
+     gameOverSoundPlayed = false;
+     score = 0;
+     timeLeft = 60;
+     balls = [];
+     ballSpeed = 6;
+     maxBalls = 2;
+     interval = 5000;
+     lastBallTime = 0;
+     loop(); 
+     document.getElementById('game-over-screen').style.display = 'none';
+     document.getElementById('you-won-screen').style.display = 'none';
+   }
+
+   
+   function goToHome() {
+     window.location.href = 'http://127.0.0.1:3002/index.html';
+   }
+ </script>
+</body>
+</html>
